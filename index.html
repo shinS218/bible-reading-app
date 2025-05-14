@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<link rel="apple-touch-icon" href="icon-192x192.png">
+<script>
+  // 서비스 워커 등록
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+        console.log('서비스 워커 등록 성공:', registration.scope);
+      }, function(err) {
+        console.log('서비스 워커 등록 실패:', err);
+      });
+    });
+  }
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30일 성경 통독 프로그램</title>
+    <style>
+        body {
+            font-family: 'Nanum Gothic', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .progress-container {
+            margin: 20px 0;
+            background-color: #eee;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            width: 0%;
+            height: 30px;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            transition: width 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin: 5px;
+            min-width: 150px;
+        }
+        .reading-plan {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .check-container {
+            text-align: center;
+        }
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .scripture {
+            max-width: 400px;
+        }
+        .day-header {
+            background-color: #e6f2ff;
+            font-weight: bold;
+        }
+        .reset-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .save-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+        .buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .time-estimate {
+            font-style: italic;
+            color: #666;
+        }
+        .ot-row {
+            background-color: #fff8e1;
+        }
+        .nt-row {
+            background-color: #e3f2fd;
+        }
+        .day-title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        @media (max-width: 768px) {
+            th, td {
+                padding: 8px 10px;
+            }
+            .scripture {
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>30일 성경 통독 프로그램</h1>
+    <p>개역개정 성경을 30일 동안 통독하는 프로그램입니다. 각 날짜별 읽기 분량을 확인하고 체크해보세요.</p>
+    
+    <div class="progress-container">
+        <div class="progress-bar" id="progress">0%</div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <h3>전체 진행률</h3>
+            <p id="percentage">0%</p>
+        </div>
+        <div class="stat-box">
+            <h3>읽은 장</h3>
+            <p id="chaptersRead">0 / 1,189</p>
+        </div>
+        <div class="stat-box">
+            <h3>남은 일수</h3>
+            <p id="daysLeft">30일</p>
+        </div>
+        <div class="stat-box">
+            <h3>완료한 일차</h3>
+            <p id="daysCompleted">0일</p>
+        </div>
+    </div>
+    
+    <div class="reading-plan">
+        <h2>읽기 계획</h2>
+        
+        <table id="reading-table">
+            <thead>
+                <tr>
+                    <th>일차</th>
+                    <th class="scripture">성경본문</th>
+                    <th>장 수</th>
+                    <th>예상 시간</th>
+                    <th>통독여부</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 여기에 JS로 날짜와 성경 구절이 들어갑니다 -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="buttons">
+        <button class="reset-btn" id="resetBtn">모두 초기화</button>
+        <button class="save-btn" id="saveBtn">진행 상황 저장</button>
+    </div>
+    
+    <script>
+        // 성경 책별 장 수
+        const bible = {
+            // 구약
+            "창세기": 50, "출애굽기": 40, "레위기": 27, "민수기": 36, "신명기": 34,
+            "여호수아": 24, "사사기": 21, "룻기": 4, "사무엘상": 31, "사무엘하": 24,
+            "열왕기상": 22, "열왕기하": 25, "역대상": 29, "역대하": 36, "에스라": 10,
+            "느헤미야": 13, "에스더": 10, "욥기": 42, "시편": 150, "잠언": 31,
+            "전도서": 12, "아가": 8, "이사야": 66, "예레미야": 52, "예레미야애가": 5,
+            "에스겔": 48, "다니엘": 12, "호세아": 14, "요엘": 3, "아모스": 9,
+            "오바댜": 1, "요나": 4, "미가": 7, "나훔": 3, "하박국": 3,
+            "스바냐": 3, "학개": 2, "스가랴": 14, "말라기": 4,
+            
+            // 신약
+            "마태복음": 28, "마가복음": 16, "누가복음": 24, "요한복음": 21, "사도행전": 28,
+            "로마서": 16, "고린도전서": 16, "고린도후서": 13, "갈라디아서": 6, "에베소서": 6,
+            "빌립보서": 4, "골로새서": 4, "데살로니가전서": 5, "데살로니가후서": 3, "디모데전서": 6,
+            "디모데후서": 4, "디도서": 3, "빌레몬서": 1, "히브리서": 13, "야고보서": 5,
+            "베드로전서": 5, "베드로후서": 3, "요한일서": 5, "요한이서": 1, "요한삼서": 1,
+            "유다서": 1, "요한계시록": 22
+        };
+        
+        // 30일 읽기 계획 생성
+        function createReadingPlan() {
+            const readingPlan = [];
+            let totalChapters = 0;
+            
+            // 총 장 수 계산
+            for (const book in bible) {
+                totalChapters += bible[book];
+            }
+            
+            // 대략적으로 균등하게 분배 (하루 약 40장)
+            const dailyChapters = Math.ceil(totalChapters / 30);
+            
+            let currentDay = 1;
+            let chaptersForDay = 0;
+            let dayReadings = [];
+            
+            // 구약
+            const oldTestament = ["창세기", "출애굽기", "레위기", "민수기", "신명기",
+                "여호수아", "사사기", "룻기", "사무엘상", "사무엘하",
+                "열왕기상", "열왕기하", "역대상", "역대하", "에스라",
+                "느헤미야", "에스더", "욥기", "시편", "잠언",
+                "전도서", "아가", "이사야", "예레미야", "예레미야애가",
+                "에스겔", "다니엘", "호세아", "요엘", "아모스",
+                "오바댜", "요나", "미가", "나훔", "하박국",
+                "스바냐", "학개", "스가랴", "말라기"];
+            
+            // 신약
+            const newTestament = ["마태복음", "마가복음", "누가복음", "요한복음", "사도행전",
+                "로마서", "고린도전서", "고린도후서", "갈라디아서", "에베소서",
+                "빌립보서", "골로새서", "데살로니가전서", "데살로니가후서", "디모데전서",
+                "디모데후서", "디도서", "빌레몬서", "히브리서", "야고보서",
+                "베드로전서", "베드로후서", "요한일서", "요한이서", "요한삼서",
+                "유다서", "요한계시록"];
+            
+            // 읽기 계획 배열 생성 (구약과 신약을 분배)
+            const readingSchedule = [
+                // 1-20일: 구약
+                ...oldTestament,
+                // 21-30일: 신약
+                ...newTestament
+            ];
+            
+            let bookIndex = 0;
+            let currentBook = readingSchedule[bookIndex];
+            let currentChapter = 1;
+            
+            for (let day = 1; day <= 30; day++) {
+                const dayPlan = {
+                    day: day,
+                    readings: [],
+                    totalChapters: 0,
+                    isOldTestament: day <= 20
+                };
+                
+                let chaptersToRead = dailyChapters;
+                
+                // 1-20일은 구약, 21-30일은 신약
+                if (day === 21) {
+                    bookIndex = oldTestament.length; // 신약 시작
+                    currentBook = readingSchedule[bookIndex];
+                    currentChapter = 1;
+                }
+                
+                while (chaptersToRead > 0) {
+                    const bookChapters = bible[currentBook];
+                    const remainingInBook = bookChapters - currentChapter + 1;
+                    
+                    if (remainingInBook <= chaptersToRead) {
+                        // 현재 책을 다 읽을 수 있는 경우
+                        if (remainingInBook > 0) {
+                            dayPlan.readings.push({
+                                book: currentBook,
+                                start: currentChapter,
+                                end: bookChapters
+                            });
+                            dayPlan.totalChapters += remainingInBook;
+                        }
+                        
+                        chaptersToRead -= remainingInBook;
+                        bookIndex++;
+                        
+                        if (bookIndex < readingSchedule.length) {
+                            currentBook = readingSchedule[bookIndex];
+                            currentChapter = 1;
+                        } else {
+                            break; // 모든 책을 다 읽은 경우
+                        }
+                    } else {
+                        // 현재 책의 일부만 읽는 경우
+                        dayPlan.readings.push({
+                            book: currentBook,
+                            start: currentChapter,
+                            end: currentChapter + chaptersToRead - 1
+                        });
+                        dayPlan.totalChapters += chaptersToRead;
+                        currentChapter += chaptersToRead;
+                        chaptersToRead = 0;
+                    }
+                }
+                
+                readingPlan.push(dayPlan);
+            }
+            
+            return readingPlan;
+        }
+        
+        // 테이블에 읽기 계획 표시
+        function displayReadingPlan(plan) {
+            const tableBody = document.querySelector("#reading-table tbody");
+            tableBody.innerHTML = "";
+            
+            plan.forEach((dayPlan, index) => {
+                const row = document.createElement("tr");
+                row.className = dayPlan.isOldTestament ? "ot-row" : "nt-row";
+                
+                // 일차 표시 (구약/신약 구분)
+                const dayCell = document.createElement("td");
+                dayCell.className = "day-title";
+                dayCell.textContent = `${dayPlan.day}일차`;
+                if (dayPlan.day === 1) {
+                    dayCell.textContent += " (구약 시작)";
+                } else if (dayPlan.day === 21) {
+                    dayCell.textContent += " (신약 시작)";
+                }
+                row.appendChild(dayCell);
+                
+                // 성경 본문 표시
+                const scriptureCell = document.createElement("td");
+                scriptureCell.className = "scripture";
+                
+                dayPlan.readings.forEach((reading, i) => {
+                    if (i > 0) {
+                        scriptureCell.appendChild(document.createElement("br"));
+                    }
+                    
+                    const text = reading.start === reading.end
+                        ? `${reading.book} ${reading.start}장`
+                        : `${reading.book} ${reading.start}-${reading.end}장`;
+                        
+                    scriptureCell.appendChild(document.createTextNode(text));
+                });
+                row.appendChild(scriptureCell);
+                
+                // 총 장 수
+                const chaptersCell = document.createElement("td");
+                chaptersCell.textContent = `${dayPlan.totalChapters}장`;
+                row.appendChild(chaptersCell);
+                
+                // 예상 소요 시간
+                const timeCell = document.createElement("td");
+                const hours = Math.floor(dayPlan.totalChapters * 2.5 / 60);
+                const minutes = Math.round(dayPlan.totalChapters * 2.5 % 60);
+                
+                if (hours > 0) {
+                    timeCell.textContent = `약 ${hours}시간 ${minutes}분`;
+                } else {
+                    timeCell.textContent = `약 ${minutes}분`;
+                }
+                timeCell.className = "time-estimate";
+                row.appendChild(timeCell);
+                
+                // 체크박스
+                const checkCell = document.createElement("td");
+                checkCell.className = "check-container";
+                
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.className = "checkbox";
+                checkbox.dataset.day = dayPlan.day;
+                checkbox.dataset.chapters = dayPlan.totalChapters;
+                
+                // 저장된 상태 불러오기
+                const savedState = localStorage.getItem(`day-${dayPlan.day}`);
+                if (savedState === "completed") {
+                    checkbox.checked = true;
+                }
+                
+                checkbox.addEventListener("change", updateProgress);
+                
+                checkCell.appendChild(checkbox);
+                row.appendChild(checkCell);
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 진행 상황 업데이트
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll(".checkbox");
+            let completedDays = 0;
+            let completedChapters = 0;
+            let totalChapters = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const chapters = parseInt(checkbox.dataset.chapters);
+                totalChapters += chapters;
+                
+                if (checkbox.checked) {
+                    completedDays++;
+                    completedChapters += chapters;
+                    localStorage.setItem(`day-${checkbox.dataset.day}`, "completed");
+                } else {
+                    localStorage.removeItem(`day-${checkbox.dataset.day}`);
+                }
+            });
+            
+            // 통계 업데이트
+            const progressPercent = Math.round((completedChapters / 1189) * 100);
+            document.getElementById("progress").style.width = `${progressPercent}%`;
+            document.getElementById("progress").textContent = `${progressPercent}%`;
+            document.getElementById("percentage").textContent = `${progressPercent}%`;
+            document.getElementById("chaptersRead").textContent = `${completedChapters} / 1,189`;
+            document.getElementById("daysLeft").textContent = `${30 - completedDays}일`;
+            document.getElementById("daysCompleted").textContent = `${completedDays}일`;
+        }
+        
+        // 저장된 상태 불러오기
+        function loadSavedState() {
+            for (let i = 1; i <= 30; i++) {
+                const state = localStorage.getItem(`day-${i}`);
+                if (state === "completed") {
+                    const checkbox = document.querySelector(`.checkbox[data-day="${i}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                }
+            }
+            updateProgress();
+        }
+        
+        // 초기화 버튼
+        document.getElementById("resetBtn").addEventListener("click", function() {
+            if (confirm("정말 모든 진행 상황을 초기화하시겠습니까?")) {
+                const checkboxes = document.querySelectorAll(".checkbox");
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    localStorage.removeItem(`day-${checkbox.dataset.day}`);
+                });
+                updateProgress();
+            }
+        });
+        
+        // 저장 버튼
+        document.getElementById("saveBtn").addEventListener("click", function() {
+            updateProgress();
+            alert("현재 진행 상황이 저장되었습니다.");
+        });
+        
+        // 페이지 로드 시 실행
+        window.addEventListener("load", function() {
+            const readingPlan = createReadingPlan();
+            displayReadingPlan(readingPlan);
+            loadSavedState();
+        });
+    </script>
+</body>
+</html>
